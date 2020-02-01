@@ -25,6 +25,8 @@ public class Segmenter
 
     int [][] pixels;
 
+    double eps = 0.1;
+
 
     public void initialize()
     {
@@ -66,11 +68,6 @@ public class Segmenter
         distances = new double[k];
         clusters = new ArrayList[k];
 
-        for(int i=0;i<k;i++)
-        {
-            clusters[i] = new ArrayList<>();
-        }
-
         Random rand = new Random();
 
         for(int i=0;i<k;i++)
@@ -78,44 +75,63 @@ public class Segmenter
             centroids[i] = new Color(rand.nextInt(256),rand.nextInt(256),rand.nextInt(256));
         }
 
-        for(int i=0;i<image.getWidth();i++)
+        do
         {
-            for(int j=0;j<image.getHeight();j++)
+            for(int i=0;i<k;i++)
             {
-                Color currentColor = new Color(image.getRGB(i,j));
+                clusters[i] = new ArrayList<>();
+            }
 
-                for(int z=0;z<k;z++)
+            for(int i=0;i<image.getWidth();i++)
+            {
+                for(int j=0;j<image.getHeight();j++)
                 {
-                    distances[z] = Math.sqrt(Math.pow(currentColor.getRed()-centroids[z].getRed(),2)+
-                            Math.pow(currentColor.getGreen()-centroids[z].getGreen(),2)+
-                            Math.pow(currentColor.getBlue()-centroids[z].getBlue(),2));
+                    Color currentColor = new Color(image.getRGB(i,j));
+
+                    for(int z=0;z<k;z++)
+                    {
+                        distances[z] = Math.sqrt(Math.pow(currentColor.getRed()-centroids[z].getRed(),2)+
+                                Math.pow(currentColor.getGreen()-centroids[z].getGreen(),2)+
+                                Math.pow(currentColor.getBlue()-centroids[z].getBlue(),2));
+                    }
+
+                    int index = min(distances);
+
+                    clusters[index].add(currentColor);
+
+                    pixels[i][j] = index;
+                }
+            }
+
+            Color prevCentroid = centroids[0];
+
+
+            for(int i=0;i<k;i++)
+            {
+
+                double rSum = 0;
+                double gSum = 0;
+                double bSum = 0;
+
+                for(Color c:clusters[i])
+                {
+                    rSum+=c.getRed();
+                    gSum+=c.getGreen();
+                    bSum+=c.getBlue();
                 }
 
-                int index = min(distances);
-
-                clusters[index].add(currentColor);
-
-                pixels[i][j] = index;
+                centroids[i] = new Color((int)rSum/clusters[i].size(),(int)gSum/clusters[i].size(),(int)bSum/clusters[i].size());
             }
-        }
 
-
-        for(int i=0;i<k;i++)
-        {
-
-            double rSum = 0;
-            double gSum = 0;
-            double bSum = 0;
-
-            for(Color c:clusters[i])
+            if(Math.sqrt(Math.pow(prevCentroid.getRed()-centroids[0].getRed(),2)+
+                    Math.pow(prevCentroid.getGreen()-centroids[0].getGreen(),2)+
+                    Math.pow(prevCentroid.getBlue()-centroids[0].getBlue(),2))<eps)
             {
-                rSum+=c.getRed();
-                gSum+=c.getGreen();
-                bSum+=c.getBlue();
+                break;
             }
+        }while(true);
 
-            centroids[i] = new Color((int)rSum/clusters[i].size(),(int)gSum/clusters[i].size(),(int)bSum/clusters[i].size());
-        }
+
 
         for(int i=0;i<image.getWidth();i++)
         {
